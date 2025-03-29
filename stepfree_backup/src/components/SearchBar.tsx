@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react';
 
 interface Props {
   onSearchSubmit: (values: { start?: string; end?: string }) => void;
+  startQuery: string;
+  endQuery: string;
+  setStartQuery: React.Dispatch<React.SetStateAction<string>>;
+  setEndQuery: React.Dispatch<React.SetStateAction<string>>;
 }
 
 interface Suggestion {

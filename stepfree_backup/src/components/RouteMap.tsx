@@ -1,4 +1,21 @@
 'use client';
+export async function getRouteViaMapbox(
+  start: [number, number],
+  end: [number, number]
+) {
+  const accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
+  const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${start[0]},${start[1]};${end[0]},${end[1]}?geometries=geojson&access_token=${accessToken}`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (!res.ok || !data.routes || data.routes.length === 0) {
+    throw new Error(`Mapbox route fetch failed: ${res.status}`);
+  }
+
+  return data.routes[0].geometry; // GeoJSON LineString
+}
 
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
@@ -25,6 +42,8 @@ export default function RouteMap() {
   const wheelmapMarkers = useRef<mapboxgl.Marker[]>([]);
   const [routeDrawn, setRouteDrawn] = useState(false);
   const [clickMode, setClickMode] = useState<'start' | 'end'>('start');
+  const [startQuery, setStartQuery] = useState('');
+  const [endQuery, setEndQuery] = useState('');
 
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
@@ -36,9 +55,17 @@ export default function RouteMap() {
       zoom: 13,
     });
 
-    map.current.on('click', (e) => {
+    map.current.on('click', async (e) => {
       const { lng, lat } = e.lngLat;
-      console.log('🖱️ Map clicked at:', { lng, lat });
+
+      const reverseGeocode = async (coords: [number, number]) => {
+        const res = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${coords[0]},${coords[1]}.json?access_token=${mapboxgl.accessToken}`
+        );
+        const data = await res.json();
+        const name = data.features?.[0]?.place_name || `${coords[1].toFixed(5)}, ${coords[0].toFixed(5)}`;
+        return name;
+      };
 
       if (localCoords.current.start && localCoords.current.end) {
         cleanupRoute();
@@ -47,6 +74,8 @@ export default function RouteMap() {
           .setLngLat([lng, lat])
           .addTo(map.current!);
         routeMarkers.current.start = marker;
+        setStartQuery(await reverseGeocode([lng, lat]));
+        setEndQuery('');
         setClickMode('end');
         return;
       }
@@ -57,6 +86,7 @@ export default function RouteMap() {
           .setLngLat([lng, lat])
           .addTo(map.current!);
         routeMarkers.current.start = marker;
+        setStartQuery(await reverseGeocode([lng, lat]));
         setClickMode('end');
       } else if (!localCoords.current.end) {
         localCoords.current.end = [lng, lat];
@@ -64,6 +94,7 @@ export default function RouteMap() {
           .setLngLat([lng, lat])
           .addTo(map.current!);
         routeMarkers.current.end = marker;
+        setEndQuery(await reverseGeocode([lng, lat]));
         tryDrawRoute(localCoords.current.start, localCoords.current.end);
         setClickMode('start');
       }
@@ -81,6 +112,19 @@ export default function RouteMap() {
 
     routeMarkers.current[role] = marker;
     localCoords.current[role] = coords;
+
+    const reverseGeocode = async () => {
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${coords[0]},${coords[1]}.json?access_token=${mapboxgl.accessToken}`
+      );
+      const data = await res.json();
+      return data.features?.[0]?.place_name || `${coords[1].toFixed(5)}, ${coords[0].toFixed(5)}`;
+    };
+
+    reverseGeocode().then((place) => {
+      if (role === 'start') setStartQuery(place);
+      else setEndQuery(place);
+    });
 
     if (localCoords.current.start && localCoords.current.end) {
       tryDrawRoute(localCoords.current.start, localCoords.current.end);
@@ -203,7 +247,13 @@ export default function RouteMap() {
   return (
     <div className="relative h-screen w-full">
       <Navbar onClearRoute={cleanupRoute} showClearButton={routeDrawn} />
-      <SearchBar onSearchSubmit={handleSearchSubmit} />
+      <SearchBar 
+        onSearchSubmit={handleSearchSubmit}
+        startQuery={startQuery}
+        endQuery={endQuery}
+        setStartQuery={setStartQuery}
+        setEndQuery={setEndQuery}
+      />
       <div ref={mapContainer} className="h-full w-full pt-16" />
     </div>
   );
