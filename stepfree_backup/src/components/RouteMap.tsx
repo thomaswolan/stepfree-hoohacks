@@ -1,3 +1,4 @@
+// lib/getWheelchairRoute.ts (replaced with Mapbox walking route)
 'use client';
 export async function getRouteViaMapbox(
   start: [number, number],
@@ -26,20 +27,13 @@ import SearchBar from '@/components/SearchBar';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
-type WheelmapPoint = {
-  id: number;
-  lat: number;
-  lon: number;
-  name: string;
-  wheelchair: 'yes' | 'no' | 'limited' | string;
-};
-
 export default function RouteMap() {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const localCoords = useRef<{ start?: [number, number]; end?: [number, number] }>({});
   const routeMarkers = useRef<{ start?: mapboxgl.Marker; end?: mapboxgl.Marker }>({});
   const wheelmapMarkers = useRef<mapboxgl.Marker[]>([]);
+  const extraMarkers = useRef<mapboxgl.Marker[]>([]);
   const [routeDrawn, setRouteDrawn] = useState(false);
   const [clickMode, setClickMode] = useState<'start' | 'end'>('start');
   const [startQuery, setStartQuery] = useState('');
@@ -51,8 +45,8 @@ export default function RouteMap() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [-73.9776, 40.6845],
-      zoom: 13,
+      center: [-77.0369, 38.9072],
+      zoom: 12,
     });
 
     map.current.on('load', async () => {
@@ -129,6 +123,7 @@ export default function RouteMap() {
         localCoords.current = { start: [lng, lat] };
         const marker = new mapboxgl.Marker({ color: 'blue' })
           .setLngLat([lng, lat])
+          .setPopup(new mapboxgl.Popup().setText(await reverseGeocode([lng, lat])))
           .addTo(map.current!);
         routeMarkers.current.start = marker;
         setStartQuery(await reverseGeocode([lng, lat]));
@@ -141,6 +136,7 @@ export default function RouteMap() {
         localCoords.current.start = [lng, lat];
         const marker = new mapboxgl.Marker({ color: 'blue' })
           .setLngLat([lng, lat])
+          .setPopup(new mapboxgl.Popup().setText(await reverseGeocode([lng, lat])))
           .addTo(map.current!);
         routeMarkers.current.start = marker;
         setStartQuery(await reverseGeocode([lng, lat]));
@@ -149,6 +145,7 @@ export default function RouteMap() {
         localCoords.current.end = [lng, lat];
         const marker = new mapboxgl.Marker({ color: 'orange' })
           .setLngLat([lng, lat])
+          .setPopup(new mapboxgl.Popup().setText(await reverseGeocode([lng, lat])))
           .addTo(map.current!);
         routeMarkers.current.end = marker;
         setEndQuery(await reverseGeocode([lng, lat]));
@@ -158,6 +155,30 @@ export default function RouteMap() {
     });
   }, []);
 
+  const addMultipleMarkers = async () => {
+    if (!map.current) return;
+
+    extraMarkers.current.forEach((m) => m.remove());
+    extraMarkers.current = [];
+
+    try {
+      // TODO: Replace this URL with your actual JSON source (local or remote)
+      const res = await fetch('/locations.json');
+      const locations: { name: string; coordinates: [number, number] }[] = await res.json();
+
+      for (const loc of locations) {
+        const marker = new mapboxgl.Marker({ color: 'purple' })
+          .setLngLat(loc.coordinates)
+          .setPopup(new mapboxgl.Popup().setText(loc.name))
+          .addTo(map.current!);
+
+        extraMarkers.current.push(marker);
+      }
+    } catch (err) {
+      console.error('Failed to load markers from JSON:', err);
+    }
+  };
+
   const setPointFromCoords = (coords: [number, number], role: 'start' | 'end') => {
     if (!map.current) return;
 
@@ -165,7 +186,7 @@ export default function RouteMap() {
 
     const marker = new mapboxgl.Marker({ color: role === 'start' ? 'blue' : 'orange' })
       .setLngLat(coords)
-      .addTo(map.current!);
+      .addTo(map.current);
 
     routeMarkers.current[role] = marker;
     localCoords.current[role] = coords;
@@ -211,10 +232,6 @@ export default function RouteMap() {
 
     cleanupRoute();
 
-    const bbox = `-73.9876485,40.6745018,-73.9676485,40.6945018`;
-    const points = await fetchWheelmapData(bbox);
-    console.log('📍 Wheelmap points from search:', points);
-
     if (coords.start) setPointFromCoords(coords.start, 'start');
     if (coords.end) setPointFromCoords(coords.end, 'end');
 
@@ -225,7 +242,7 @@ export default function RouteMap() {
   const tryDrawRoute = async (start: [number, number], end: [number, number]) => {
     if (!map.current) return;
 
-    const geometry = await getWheelchairRoute(start, end);
+    const geometry = await getRouteViaMapbox(start, end);
     const routeCoordinates: [number, number][] = geometry.coordinates;
 
     if (map.current.getLayer('route')) map.current.removeLayer('route');
@@ -261,18 +278,12 @@ export default function RouteMap() {
     wheelmapMarkers.current.forEach((m) => m.remove());
     wheelmapMarkers.current = [];
 
-    const lngs = routeCoordinates.map(([lng]) => lng);
-    const lats = routeCoordinates.map(([, lat]) => lat);
+    const lngs = routeCoordinates.map((coord: [number, number]) => coord[0]);
+    const lats = routeCoordinates.map((coord: [number, number]) => coord[1]);
     const bbox = `${Math.min(...lngs)},${Math.min(...lats)},${Math.max(...lngs)},${Math.max(...lats)}`;
+    const points = await fetchWheelmapData(bbox);
 
-    const points: WheelmapPoint[] = await fetchWheelmapData(bbox);
-    console.log('📍 Wheelmap points from route:', points);
-
-    if (points.length === 0) {
-      console.warn('⚠️ No ADA stations found in this area.');
-    }
-
-    points.forEach((point: WheelmapPoint) => {
+    points.forEach((point: any) => {
       const marker = new mapboxgl.Marker({
         color: point.wheelchair === 'yes' ? 'green' : 'red',
       })
@@ -284,6 +295,9 @@ export default function RouteMap() {
     });
 
     setRouteDrawn(true);
+
+    // 👇 Load additional custom markers after route is drawn
+    addMultipleMarkers();
   };
 
   const cleanupRoute = () => {
@@ -296,6 +310,8 @@ export default function RouteMap() {
     routeMarkers.current = {};
     wheelmapMarkers.current.forEach((m) => m.remove());
     wheelmapMarkers.current = [];
+    extraMarkers.current.forEach((m) => m.remove());
+    extraMarkers.current = [];
 
     localCoords.current = {};
     setRouteDrawn(false);
@@ -303,7 +319,6 @@ export default function RouteMap() {
 
   return (
     <div className="relative h-screen w-full">
-      <Navbar onClearRoute={cleanupRoute} showClearButton={routeDrawn} />
       <SearchBar 
         onSearchSubmit={handleSearchSubmit}
         startQuery={startQuery}
