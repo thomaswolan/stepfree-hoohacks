@@ -73,9 +73,10 @@ export function NavBar() {
                     <Link href="/blog">
                         <Button variant="ghost">Blog</Button>
                     </Link>
-                    <Link href="/projects">
-                        <Button variant="ghost">Sign In/Sign Up</Button>
+                    <Link href="/auth" className="cursor-pointer">
+                      <Button variant="ghost">Sign In/Sign Up</Button>
                     </Link>
+
                     <ModeToggle />
                 </div>
             </div>
