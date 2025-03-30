@@ -139,8 +139,8 @@ export default function RouteMap() {
           .addTo(map.current!);
       });
     
-      console.log(`📍 Loaded ${stations.length} accessible subway stations`);
-      console.log(adaStations);
+      //console.log(`Loaded ${stations.length} subway stations`);
+      //console.log(adaStations);
     });
     
 
