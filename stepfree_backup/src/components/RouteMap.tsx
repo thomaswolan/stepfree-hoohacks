@@ -55,6 +55,63 @@ export default function RouteMap() {
       zoom: 13,
     });
 
+    map.current.on('load', async () => {
+      const query = `
+        [out:json][timeout:25];
+        area["name"="Brooklyn"]["boundary"="administrative"]->.searchArea;
+        node
+          ["railway"="station"]
+          ["station"="subway"]
+          ["wheelchair"]
+          (area.searchArea);
+        out body;
+      `;
+    
+      const res = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `data=${encodeURIComponent(query)}`
+      });
+    
+      const data = await res.json();
+    
+      const stations: WheelmapPoint[] = data.elements
+        .filter((el: any) => el.tags?.name)
+        .map((el: any) => ({
+          id: el.id,
+          name: el.tags.name,
+          wheelchair: el.tags.wheelchair,
+          lat: el.lat,
+          lon: el.lon,
+        }));
+    
+      stations.forEach((station) => {
+        const el = document.createElement('div');
+        el.style.width = '16px';
+        el.style.height = '16px';
+        el.style.borderRadius = '50%';
+        el.style.backgroundColor =
+          station.wheelchair === 'yes'
+            ? 'green'
+            : station.wheelchair === 'no'
+            ? 'red'
+            : 'orange';
+        el.style.border = '2px solid white';
+    
+        new mapboxgl.Marker(el)
+          .setLngLat([station.lon, station.lat])
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(
+              `<strong>${station.name}</strong><br/>Wheelchair: ${station.wheelchair}`
+            )
+          )
+          .addTo(map.current!);
+      });
+    
+      console.log(`📍 Loaded ${stations.length} accessible subway stations`);
+    });
+    
+
     map.current.on('click', async (e) => {
       const { lng, lat } = e.lngLat;
 
