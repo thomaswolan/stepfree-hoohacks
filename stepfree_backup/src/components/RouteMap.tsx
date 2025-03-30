@@ -1,3 +1,4 @@
+// lib/getWheelchairRoute.ts (replaced with Mapbox walking route)
 'use client';
 export async function getRouteViaMapbox(
   start: [number, number],
@@ -26,14 +27,6 @@ import SearchBar from '@/components/SearchBar';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
-type WheelmapPoint = {
-  id: number;
-  lat: number;
-  lon: number;
-  name: string;
-  wheelchair: 'yes' | 'no' | 'limited' | string;
-};
-
 export default function RouteMap() {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -52,8 +45,8 @@ export default function RouteMap() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [-73.9776, 40.6845],
-      zoom: 13,
+      center: [-77.0369, 38.9072],
+      zoom: 12,
     });
 
     map.current.on('click', async (e) => {
@@ -136,7 +129,7 @@ export default function RouteMap() {
 
     const marker = new mapboxgl.Marker({ color: role === 'start' ? 'blue' : 'orange' })
       .setLngLat(coords)
-      .addTo(map.current!);
+      .addTo(map.current);
 
     routeMarkers.current[role] = marker;
     localCoords.current[role] = coords;
@@ -182,10 +175,6 @@ export default function RouteMap() {
 
     cleanupRoute();
 
-    const bbox = `-73.9876485,40.6745018,-73.9676485,40.6945018`;
-    const points = await fetchWheelmapData(bbox);
-    console.log('📍 Wheelmap points from search:', points);
-
     if (coords.start) setPointFromCoords(coords.start, 'start');
     if (coords.end) setPointFromCoords(coords.end, 'end');
 
@@ -196,7 +185,7 @@ export default function RouteMap() {
   const tryDrawRoute = async (start: [number, number], end: [number, number]) => {
     if (!map.current) return;
 
-    const geometry = await getWheelchairRoute(start, end);
+    const geometry = await getRouteViaMapbox(start, end);
     const routeCoordinates: [number, number][] = geometry.coordinates;
 
     if (map.current.getLayer('route')) map.current.removeLayer('route');
@@ -232,18 +221,12 @@ export default function RouteMap() {
     wheelmapMarkers.current.forEach((m) => m.remove());
     wheelmapMarkers.current = [];
 
-    const lngs = routeCoordinates.map(([lng]) => lng);
-    const lats = routeCoordinates.map(([, lat]) => lat);
+    const lngs = routeCoordinates.map((coord: [number, number]) => coord[0]);
+    const lats = routeCoordinates.map((coord: [number, number]) => coord[1]);
     const bbox = `${Math.min(...lngs)},${Math.min(...lats)},${Math.max(...lngs)},${Math.max(...lats)}`;
+    const points = await fetchWheelmapData(bbox);
 
-    const points: WheelmapPoint[] = await fetchWheelmapData(bbox);
-    console.log('📍 Wheelmap points from route:', points);
-
-    if (points.length === 0) {
-      console.warn('⚠️ No ADA stations found in this area.');
-    }
-
-    points.forEach((point: WheelmapPoint) => {
+    points.forEach((point: any) => {
       const marker = new mapboxgl.Marker({
         color: point.wheelchair === 'yes' ? 'green' : 'red',
       })
@@ -279,7 +262,6 @@ export default function RouteMap() {
 
   return (
     <div className="relative h-screen w-full">
-      <Navbar onClearRoute={cleanupRoute} showClearButton={routeDrawn} />
       <SearchBar 
         onSearchSubmit={handleSearchSubmit}
         startQuery={startQuery}
