@@ -60,7 +60,7 @@ export default function SearchBar({ onSearchSubmit }: Props) {
   };
 
   return (
-    <div className="absolute top-4 left-4 z-50 bg-white dark:bg-black bg-opacity-10 border-white border-opacity-20 rounded-xl p-2 shadow-lg w-[320px] space-y-3">
+    <div className="absolute top-10 left-4 z-50 bg-white dark:bg-black bg-opacity-10 border-white border-opacity-20 rounded-xl p-2 shadow-lg w-[320px] space-y-3">
       <div className="relative">
         <label className="text-sm font-medium text-black dark:text-white">Start Location</label>
         <input

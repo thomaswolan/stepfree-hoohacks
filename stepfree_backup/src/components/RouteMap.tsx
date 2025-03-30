@@ -413,33 +413,39 @@ export default function RouteMap() {
         setEndQuery={setEndQuery}
       />
       <div ref={mapContainer} className="h-full w-full pt-16" />
-      {routeInfo && (
-      <div className="absolute top-20 right-0 bg-black text-white shadow-lg w-[300px] max-h-[80vh] overflow-y-auto rounded-l-xl p-4 z-50">
-        <button
-            onClick={() => setRouteInfo(null)}
-            className="absolute top-2 right-2 text-white hover:text-red-400 text-xl font-bold"
-            aria-label="Close panel"
-          >
+        {routeInfo && (
+          <div className="absolute top-10 right-4 bg-white dark:bg-black bg-opacity-10 border border-white border-opacity-20 rounded-xl p-4 shadow-lg w-[320px] max-h-[80vh] overflow-y-auto z-50">
+            <button
+              onClick={() => setRouteInfo(null)}
+              className="absolute top-2 right-2 text-black dark:text-white hover:text-red-400 text-xl font-bold"
+              aria-label="Close panel"
+              >
             ✖
-        </button>
+          </button>
 
-        <h2 className="text-lg font-bold mb-2">ADA Route Info</h2>
-        <p><strong>From:</strong> {routeInfo.entryStation?.name}</p>
-        <p><strong>To:</strong> {routeInfo.exitStation?.name}</p>
-        <p><strong>Duration:</strong> {routeInfo.duration}</p>
-        <p><strong>Distance:</strong> {routeInfo.distance}</p>
-        <hr className="my-2" />
-        <h3 className="font-semibold">Steps:</h3>
-        <ol className="list-decimal list-inside space-y-2 mt-1">
-          {routeInfo.steps?.map((step, i) => (
-            <li key={i}>
-              <span className="font-medium">{step.mode === 'WALKING' ? '🚶' : '🚇'} {step.instructions}</span><br />
-              <span className="text-sm text-gray-600">Duration: {step.duration}{step.line ? ` (Line ${step.line})` : ''}</span>
-            </li>
-          ))}
-        </ol>
-      </div>
-    )}
+          <h2 className="text-lg font-bold mb-2">ADA Route Info</h2>
+          <p><strong>From:</strong> {routeInfo.entryStation?.name}</p>
+          <p><strong>To:</strong> {routeInfo.exitStation?.name}</p>
+          <p><strong>Duration:</strong> {routeInfo.duration}</p>
+          <p><strong>Distance:</strong> {routeInfo.distance}</p>
+          <hr className="my-2" />
+          <h3 className="font-semibold">Steps:</h3>
+          <ol className="list-decimal list-inside space-y-2 mt-1">
+            {routeInfo.steps?.map((step, i) => (
+              <li key={i}>
+                <span className="font-medium">
+                  {step.mode === 'WALKING' ? '🚶' : '🚇'} {step.instructions}
+                </span>
+                <br />
+                <span className="text-sm text-gray-600">
+                  Duration: {step.duration}{step.line ? ` (Line ${step.line})` : ''}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
     </div>
   );
 }
