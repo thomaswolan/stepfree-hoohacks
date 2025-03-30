@@ -33,6 +33,7 @@ export default function RouteMap() {
   const localCoords = useRef<{ start?: [number, number]; end?: [number, number] }>({});
   const routeMarkers = useRef<{ start?: mapboxgl.Marker; end?: mapboxgl.Marker }>({});
   const wheelmapMarkers = useRef<mapboxgl.Marker[]>([]);
+  const extraMarkers = useRef<mapboxgl.Marker[]>([]);
   const [routeDrawn, setRouteDrawn] = useState(false);
   const [clickMode, setClickMode] = useState<'start' | 'end'>('start');
   const [startQuery, setStartQuery] = useState('');
@@ -65,6 +66,7 @@ export default function RouteMap() {
         localCoords.current = { start: [lng, lat] };
         const marker = new mapboxgl.Marker({ color: 'blue' })
           .setLngLat([lng, lat])
+          .setPopup(new mapboxgl.Popup().setText(await reverseGeocode([lng, lat])))
           .addTo(map.current!);
         routeMarkers.current.start = marker;
         setStartQuery(await reverseGeocode([lng, lat]));
@@ -77,6 +79,7 @@ export default function RouteMap() {
         localCoords.current.start = [lng, lat];
         const marker = new mapboxgl.Marker({ color: 'blue' })
           .setLngLat([lng, lat])
+          .setPopup(new mapboxgl.Popup().setText(await reverseGeocode([lng, lat])))
           .addTo(map.current!);
         routeMarkers.current.start = marker;
         setStartQuery(await reverseGeocode([lng, lat]));
@@ -85,6 +88,7 @@ export default function RouteMap() {
         localCoords.current.end = [lng, lat];
         const marker = new mapboxgl.Marker({ color: 'orange' })
           .setLngLat([lng, lat])
+          .setPopup(new mapboxgl.Popup().setText(await reverseGeocode([lng, lat])))
           .addTo(map.current!);
         routeMarkers.current.end = marker;
         setEndQuery(await reverseGeocode([lng, lat]));
@@ -93,6 +97,30 @@ export default function RouteMap() {
       }
     });
   }, []);
+
+  const addMultipleMarkers = async () => {
+    if (!map.current) return;
+
+    extraMarkers.current.forEach((m) => m.remove());
+    extraMarkers.current = [];
+
+    try {
+      // TODO: Replace this URL with your actual JSON source (local or remote)
+      const res = await fetch('/locations.json');
+      const locations: { name: string; coordinates: [number, number] }[] = await res.json();
+
+      for (const loc of locations) {
+        const marker = new mapboxgl.Marker({ color: 'purple' })
+          .setLngLat(loc.coordinates)
+          .setPopup(new mapboxgl.Popup().setText(loc.name))
+          .addTo(map.current!);
+
+        extraMarkers.current.push(marker);
+      }
+    } catch (err) {
+      console.error('Failed to load markers from JSON:', err);
+    }
+  };
 
   const setPointFromCoords = (coords: [number, number], role: 'start' | 'end') => {
     if (!map.current) return;
@@ -210,6 +238,9 @@ export default function RouteMap() {
     });
 
     setRouteDrawn(true);
+
+    // 👇 Load additional custom markers after route is drawn
+    addMultipleMarkers();
   };
 
   const cleanupRoute = () => {
@@ -222,6 +253,8 @@ export default function RouteMap() {
     routeMarkers.current = {};
     wheelmapMarkers.current.forEach((m) => m.remove());
     wheelmapMarkers.current = [];
+    extraMarkers.current.forEach((m) => m.remove());
+    extraMarkers.current = [];
 
     localCoords.current = {};
     setRouteDrawn(false);
