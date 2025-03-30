@@ -43,8 +43,8 @@ export function NavBar() {
                                 </Link>
                             </DialogClose>
                             <DialogClose asChild>
-                                <Link href="/blog">
-                                    <Button variant="outline" className="w-full">Blog</Button>
+                                <Link href="https://github.com/thomaswolan/stepfree-hoohacks">
+                                    <Button variant="outline" className="w-full">Github</Button>
                                 </Link>
                             </DialogClose>
                             <DialogClose asChild>
@@ -64,17 +64,17 @@ export function NavBar() {
                     </NavigationMenuList>
                 </NavigationMenu>
                 <div className="flex items-center gap-2 max-[825px]:hidden">
-                    <Link href="/software">
-                        <Button variant="ghost">Home</Button>
+                    <Link href="/" className="cursor-pointer">
+                        <Button variant="ghost" className="cursor-pointer">Home</Button>
                     </Link>
-                    <Link href="/automation">
-                        <Button variant="ghost">Software</Button>
+                    <Link href="/software" className="cursor-pointer">
+                        <Button variant="ghost" className="cursor-pointer">Software</Button>
                     </Link>
-                    <Link href="/blog">
-                        <Button variant="ghost">Blog</Button>
+                    <Link href="https://github.com/thomaswolan/stepfree-hoohacks" className="cursor-pointer">
+                        <Button variant="ghost" className="cursor-pointer">GitHub</Button>
                     </Link>
                     <Link href="/auth" className="cursor-pointer">
-                      <Button variant="ghost">Sign In/Sign Up</Button>
+                      <Button variant="ghost" className="cursor-pointer">Sign In/Sign Up</Button>
                     </Link>
 
                     <ModeToggle />

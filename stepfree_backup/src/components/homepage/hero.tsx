@@ -10,7 +10,7 @@ import { Section, Container } from "@/components/craft";
 import { Button } from "@/components/ui/button";
 
 // Asset imports
-import Placeholder from "@/assets/placeholder.webp";
+import Logo from "@/assets/app-logo.png";
 
 const Feature = () => {
   return (
@@ -18,8 +18,8 @@ const Feature = () => {
       <Container className="grid items-stretch">
         <div className="not-prose relative flex h-96 overflow-hidden rounded-lg border">
           <Image
-            src={Placeholder}
-            alt="placeholder"
+            src={Logo}
+            alt="logo"
             className="fill object-cover"
           />
         </div>
