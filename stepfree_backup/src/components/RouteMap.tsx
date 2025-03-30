@@ -69,6 +69,14 @@ export default function RouteMap() {
     
       const data = await res.json();
     
+      type WheelmapPoint = {
+        id: number;
+        name: string;
+        wheelchair: string;
+        lat: number;
+        lon: number;
+      };
+
       const stations: WheelmapPoint[] = data.elements
         .filter((el: any) => el.tags?.name)
         .map((el: any) => ({
