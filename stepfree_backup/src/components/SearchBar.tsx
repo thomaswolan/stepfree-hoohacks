@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface Props {
   onSearchSubmit: (values: { start?: string; end?: string }) => void;

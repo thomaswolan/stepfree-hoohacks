@@ -310,7 +310,7 @@ export default function RouteMap() {
     const route = await getTransitRouteFromGoogle(origin, destination);
 
     const directionsList = route.steps
-      .map((step, i) => {
+      .map((step: { mode: string; line: any; instructions: any; duration: any; }, i: number) => {
         const modeIcon = step.mode === 'WALKING' ? '🚶' : '🚇';
         const line = step.line ? ` (Line ${step.line})` : '';
         return `${modeIcon} Step ${i + 1}: ${step.instructions} – ${step.duration}${line}`;

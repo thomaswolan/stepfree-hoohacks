@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // React and Next.js imports
 import Link from "next/link";
 

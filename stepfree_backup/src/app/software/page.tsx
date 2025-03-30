@@ -4,7 +4,7 @@ import Balancer from "react-wrap-balancer";
 import Link from "next/link";
 
 // Icons
-import { Coins, ArrowRight } from "lucide-react";
+//import { Coins, ArrowRight } from "lucide-react";
 
 type FeatureText = {
   title: string;
