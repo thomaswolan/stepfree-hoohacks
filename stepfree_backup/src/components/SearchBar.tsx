@@ -59,9 +59,9 @@ export default function SearchBar({ onSearchSubmit }: Props) {
   };
 
   return (
-    <div className="absolute top-4 left-4 z-50 bg-white p-4 rounded shadow-md w-[300px] space-y-3">
+    <div className="absolute top-4 left-4 z-50 bg-white dark:bg-black bg-opacity-10 border-white border-opacity-20 rounded-xl p-2 shadow-lg w-[320px] space-y-3">
       <div className="relative">
-        <label className="text-sm font-medium">Start Location</label>
+        <label className="text-sm font-medium text-black dark:text-white">Start Location</label>
         <input
           type="text"
           value={startQuery}
@@ -71,15 +71,15 @@ export default function SearchBar({ onSearchSubmit }: Props) {
           }}
           onFocus={() => setActiveField('start')}
           placeholder="Search start..."
-          className="w-full px-3 py-2 text-sm border rounded mt-1"
+          className="w-full px-3 py-2 text-sm border border-gray-700 bg-transparent text-black dark:text-white rounded mt-1 focus:outline-none focus:border-blue-500"
         />
         {activeField === 'start' && startSuggestions.length > 0 && (
-          <ul className="absolute left-0 right-0 mt-1 bg-white border rounded shadow max-h-48 overflow-y-auto z-50">
+          <ul className="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-700 rounded shadow max-h-48 overflow-y-auto z-50">
             {startSuggestions.map((s, i) => (
               <li
                 key={i}
                 onClick={() => handleSuggestionClick(s, 'start')}
-                className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                className="px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
               >
                 {s.place_name}
               </li>
@@ -89,7 +89,7 @@ export default function SearchBar({ onSearchSubmit }: Props) {
       </div>
 
       <div className="relative">
-        <label className="text-sm font-medium">End Location</label>
+        <label className="text-sm font-medium text-black dark:text-white">End Location</label>
         <input
           type="text"
           value={endQuery}
@@ -99,15 +99,15 @@ export default function SearchBar({ onSearchSubmit }: Props) {
           }}
           onFocus={() => setActiveField('end')}
           placeholder="Search destination..."
-          className="w-full px-3 py-2 text-sm border rounded mt-1"
+          className="w-full px-3 py-2 text-sm border border-gray-700 bg-transparent text-black dark:text-white rounded mt-1 focus:outline-none focus:border-blue-500"
         />
         {activeField === 'end' && endSuggestions.length > 0 && (
-          <ul className="absolute left-0 right-0 mt-1 bg-white border rounded shadow max-h-48 overflow-y-auto z-50">
+          <ul className="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-700 rounded shadow max-h-48 overflow-y-auto z-50">
             {endSuggestions.map((s, i) => (
               <li
                 key={i}
                 onClick={() => handleSuggestionClick(s, 'end')}
-                className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                className="px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
               >
                 {s.place_name}
               </li>
@@ -118,7 +118,7 @@ export default function SearchBar({ onSearchSubmit }: Props) {
 
       <button
         onClick={handleSubmit}
-        className="w-full bg-blue-500 text-white text-sm px-3 py-2 rounded hover:bg-blue-600"
+        className="w-full bg-blue-500 text-white text-sm px-3 py-2 rounded hover:bg-blue-600 transition"
       >
         Go
       </button>

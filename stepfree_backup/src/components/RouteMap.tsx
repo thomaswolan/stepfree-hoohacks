@@ -22,7 +22,7 @@ import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { getWheelchairRoute } from '@/lib/getWheelchairRoute';
 import { fetchWheelmapData } from '@/lib/fetchWheelmapData';
-import Navbar from '@/components/navbar';
+import { NavBar } from "@/components/navbar";
 import SearchBar from '@/components/SearchBar';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
