@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -29,7 +30,7 @@ export default function AccessibleStationsMap() {
     const fetchStations = async () => {
       const query = `
         [out:json][timeout:25];
-        area["name"="Brooklyn"]["boundary"="administrative"]->.searchArea;
+        area["name"="New York"]["boundary"="administrative"]->.searchArea;
         node
           ["railway"="station"]
           ["station"="subway"]

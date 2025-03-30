@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // lib/getWheelchairRoute.ts (replaced with Mapbox walking route)
 'use client';
 export async function getRouteViaMapbox(
@@ -24,6 +26,17 @@ import { getWheelchairRoute } from '@/lib/getWheelchairRoute';
 import { fetchWheelmapData } from '@/lib/fetchWheelmapData';
 import { NavBar } from "@/components/navbar";
 import SearchBar from '@/components/SearchBar';
+import { getTransitRouteFromGoogle } from '@/lib/getTransitRoute';
+import polyline from '@mapbox/polyline';
+
+type WheelmapPoint = {
+  id:number;
+  name:string;
+  wheelchair:string;
+  lat:number;
+  lon:number;
+};
+
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
@@ -34,10 +47,24 @@ export default function RouteMap() {
   const routeMarkers = useRef<{ start?: mapboxgl.Marker; end?: mapboxgl.Marker }>({});
   const wheelmapMarkers = useRef<mapboxgl.Marker[]>([]);
   const extraMarkers = useRef<mapboxgl.Marker[]>([]);
+  const adaStations = useRef<WheelmapPoint[]>([]);
   const [routeDrawn, setRouteDrawn] = useState(false);
   const [clickMode, setClickMode] = useState<'start' | 'end'>('start');
   const [startQuery, setStartQuery] = useState('');
   const [endQuery, setEndQuery] = useState('');
+
+  const [routeInfo, setRouteInfo] = useState<{
+    entryStation?: WheelmapPoint;
+    exitStation?: WheelmapPoint;
+    duration?: string;
+    distance?: string;
+    steps?: {
+      mode: string;
+      duration: string;
+      instructions: string;
+      line?: string;
+    }[];
+  } | null>(null);
 
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
@@ -45,14 +72,14 @@ export default function RouteMap() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [-77.0369, 38.9072],
+      center: [-73.9911, 40.7359],
       zoom: 12,
     });
 
     map.current.on('load', async () => {
       const query = `
         [out:json][timeout:25];
-        area["name"="Brooklyn"]["boundary"="administrative"]->.searchArea;
+        area["name"="New York"]["boundary"="administrative"]->.searchArea;
         node
           ["railway"="station"]
           ["station"="subway"]
@@ -86,7 +113,9 @@ export default function RouteMap() {
           lat: el.lat,
           lon: el.lon,
         }));
-    
+        
+      adaStations.current = stations.filter((station) => station.wheelchair === 'yes');
+
       stations.forEach((station) => {
         const el = document.createElement('div');
         el.style.width = '16px';
@@ -111,6 +140,7 @@ export default function RouteMap() {
       });
     
       console.log(`📍 Loaded ${stations.length} accessible subway stations`);
+      console.log(adaStations);
     });
     
 
@@ -170,7 +200,6 @@ export default function RouteMap() {
     extraMarkers.current = [];
 
     try {
-      // TODO: Replace this URL with your actual JSON source (local or remote)
       const res = await fetch('/locations.json');
       const locations: { name: string; coordinates: [number, number] }[] = await res.json();
 
@@ -247,11 +276,59 @@ export default function RouteMap() {
     if (coords.end && !coords.start) map.current?.flyTo({ center: coords.end, zoom: 14 });
   };
 
+
+  function findNearestAdaStation(coord: [number, number], stations: WheelmapPoint[]) {
+    const [lng, lat] = coord;
+  
+    let nearest = stations[0];
+    let minDist = Number.MAX_VALUE;
+  
+    for (const station of stations) {
+      const d = Math.sqrt(
+        Math.pow(station.lat - lat, 2) + Math.pow(station.lon - lng, 2)
+      );
+      if (d < minDist) {
+        minDist = d;
+        nearest = station;
+      }
+    }
+  
+    return nearest;
+  }
+  
+
   const tryDrawRoute = async (start: [number, number], end: [number, number]) => {
     if (!map.current) return;
 
-    const geometry = await getRouteViaMapbox(start, end);
-    const routeCoordinates: [number, number][] = geometry.coordinates;
+    const entryStation = findNearestAdaStation(start, adaStations.current);
+    const exitStation = findNearestAdaStation(end, adaStations.current);
+
+    const origin = `${entryStation.lat},${entryStation.lon}`;
+    const destination = `${exitStation.lat},${exitStation.lon}`;
+    
+    
+    const route = await getTransitRouteFromGoogle(origin, destination);
+
+    const directionsList = route.steps
+      .map((step, i) => {
+        const modeIcon = step.mode === 'WALKING' ? '🚶' : '🚇';
+        const line = step.line ? ` (Line ${step.line})` : '';
+        return `${modeIcon} Step ${i + 1}: ${step.instructions} – ${step.duration}${line}`;
+      })
+      .join('\n\n');
+
+      setRouteInfo({
+        entryStation,
+        exitStation,
+        duration: route.duration,
+        distance: route.distance,
+        steps: route.steps,
+      });
+
+    
+    // Decode Google's encoded polyline to Mapbox [lng, lat]
+    const routeCoordinates = polyline.decode(route.polyline).map(([lat, lng]) => [lng, lat]);
+    
 
     if (map.current.getLayer('route')) map.current.removeLayer('route');
     if (map.current.getSource('route')) map.current.removeSource('route');
@@ -290,6 +367,7 @@ export default function RouteMap() {
     const lats = routeCoordinates.map((coord: [number, number]) => coord[1]);
     const bbox = `${Math.min(...lngs)},${Math.min(...lats)},${Math.max(...lngs)},${Math.max(...lats)}`;
     const points = await fetchWheelmapData(bbox);
+    adaStations.current = points;
 
     points.forEach((point: any) => {
       const marker = new mapboxgl.Marker({
@@ -304,7 +382,7 @@ export default function RouteMap() {
 
     setRouteDrawn(true);
 
-    // 👇 Load additional custom markers after route is drawn
+    // Load additional custom markers after route is drawn
     addMultipleMarkers();
   };
 
@@ -335,6 +413,33 @@ export default function RouteMap() {
         setEndQuery={setEndQuery}
       />
       <div ref={mapContainer} className="h-full w-full pt-16" />
+      {routeInfo && (
+      <div className="absolute top-20 right-0 bg-black text-white shadow-lg w-[300px] max-h-[80vh] overflow-y-auto rounded-l-xl p-4 z-50">
+        <button
+            onClick={() => setRouteInfo(null)}
+            className="absolute top-2 right-2 text-white hover:text-red-400 text-xl font-bold"
+            aria-label="Close panel"
+          >
+            ✖
+        </button>
+
+        <h2 className="text-lg font-bold mb-2">ADA Route Info</h2>
+        <p><strong>From:</strong> {routeInfo.entryStation?.name}</p>
+        <p><strong>To:</strong> {routeInfo.exitStation?.name}</p>
+        <p><strong>Duration:</strong> {routeInfo.duration}</p>
+        <p><strong>Distance:</strong> {routeInfo.distance}</p>
+        <hr className="my-2" />
+        <h3 className="font-semibold">Steps:</h3>
+        <ol className="list-decimal list-inside space-y-2 mt-1">
+          {routeInfo.steps?.map((step, i) => (
+            <li key={i}>
+              <span className="font-medium">{step.mode === 'WALKING' ? '🚶' : '🚇'} {step.instructions}</span><br />
+              <span className="text-sm text-gray-600">Duration: {step.duration}{step.line ? ` (Line ${step.line})` : ''}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    )}
     </div>
   );
 }
