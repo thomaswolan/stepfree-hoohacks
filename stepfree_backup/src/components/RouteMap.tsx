@@ -327,7 +327,8 @@ export default function RouteMap() {
 
     
     // Decode Google's encoded polyline to Mapbox [lng, lat]
-    const routeCoordinates = polyline.decode(route.polyline).map(([lat, lng]) => [lng, lat]);
+    const decoded: [number, number][] = polyline.decode(route.polyline);
+    const routeCoordinates: [number, number][] = decoded.map(([lat, lng])  => [lng, lat]);
     
 
     if (map.current.getLayer('route')) map.current.removeLayer('route');
